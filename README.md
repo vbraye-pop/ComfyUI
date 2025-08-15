@@ -431,28 +431,33 @@ The diagram below shows how ComfyUI builds and runs a workflow while loading mod
 
 ```mermaid
 graph TD
-    subgraph Workflow
-        Workflow["Workflow JSON"]
-        Build["build_graph"]
-    end
-    subgraph Runtime
-        Queue["ExecutionQueue"]
-        Executor["GraphExecutor"]
-    end
-    subgraph Nodes
-        NodeDefs["nodes.py<br/>built-in nodes"]
-        CustomNodes["custom_nodes"]
-    end
-    subgraph Resources
-        ModelMgr["comfy.model_management<br/>model loader/cache"]
-        MemoryMgr["cuda_malloc.py<br/>VRAM manager"]
-        Paths["folder_paths.py<br/>search paths"]
+    %% Subgraphs with unique IDs and labels
+    subgraph wf [Workflow]
+        wf_json["Workflow JSON"]
+        build["build_graph"]
     end
 
-    Workflow --> Build --> Queue --> Executor
-    Executor -->|visits| NodeDefs
-    NodeDefs --> CustomNodes
-    Executor -->|requests| ModelMgr
-    ModelMgr --> MemoryMgr
-    ModelMgr --> Paths
+    subgraph rt [Runtime]
+        queue["ExecutionQueue"]
+        executor["GraphExecutor"]
+    end
+
+    subgraph nd [Nodes]
+        node_defs["nodes.py<br/>built-in nodes"]
+        custom_nodes["custom_nodes"]
+    end
+
+    subgraph res [Resources]
+        model_mgr["comfy.model_management<br/>model loader/cache"]
+        memory_mgr["cuda_malloc.py<br/>VRAM manager"]
+        paths["folder_paths.py<br/>search paths"]
+    end
+
+    %% Flow
+    wf_json --> build --> queue --> executor
+    executor -->|visits| node_defs
+    node_defs --> custom_nodes
+    executor -->|requests| model_mgr
+    model_mgr --> memory_mgr
+    model_mgr --> paths
 ```
