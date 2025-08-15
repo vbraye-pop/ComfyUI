@@ -401,3 +401,58 @@ This will use a snapshot of the legacy frontend preserved in the [ComfyUI Legacy
 ### Which GPU should I buy for this?
 
 [See this page for some recommendations](https://github.com/comfyanonymous/ComfyUI/wiki/Which-GPU-should-I-buy-for-ComfyUI)
+
+## Codebase Architecture
+
+```mermaid
+graph TD
+    Main["main.py<br/>startup"]
+    Server["server.py<br/>PromptServer"]
+    Execution["execution.py<br/>Graph Executor"]
+    Nodes["nodes.py<br/>Node Definitions"]
+    App["app package<br/>User/Model/Custom node managers"]
+    API["api_server routes"]
+    Custom["custom_nodes"]
+    Comfy["comfy package<br/>model management, samplers, utils"]
+
+    Main --> Server
+    Main --> Execution
+    Server --> Execution
+    Server --> App
+    Server --> API
+    Execution --> Nodes
+    Nodes --> Comfy
+    Nodes --> Custom
+```
+
+### Execution and Resource Flow
+
+The diagram below shows how ComfyUI builds and runs a workflow while loading models and juggling GPU memory.
+
+```mermaid
+graph TD
+    subgraph Workflow
+        Workflow["Workflow JSON"]
+        Build["build_graph"]
+    end
+    subgraph Runtime
+        Queue["ExecutionQueue"]
+        Executor["GraphExecutor"]
+    end
+    subgraph Nodes
+        NodeDefs["nodes.py<br/>built-in nodes"]
+        CustomNodes["custom_nodes"]
+    end
+    subgraph Resources
+        ModelMgr["comfy.model_management<br/>model loader/cache"]
+        MemoryMgr["cuda_malloc.py<br/>VRAM manager"]
+        Paths["folder_paths.py<br/>search paths"]
+    end
+
+    Workflow --> Build --> Queue --> Executor
+    Executor -->|visits| NodeDefs
+    NodeDefs --> CustomNodes
+    Executor -->|requests| ModelMgr
+    ModelMgr --> MemoryMgr
+    ModelMgr --> Paths
+```
